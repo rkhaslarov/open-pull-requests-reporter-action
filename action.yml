@@ -1,19 +1,23 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
-
-# Define your inputs here.
+name: 'Open Pull Requests Reporter'
+description: 'Slack messages for your PRs'
+author: 'Rufat Khaslarov'
 inputs:
-  milliseconds:
-    description: 'Your input description here'
+  token:
+    description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
     required: true
-    default: '1000'
-
-# Define your outputs here.
-outputs:
-  time:
-    description: 'Your output description here'
-
+  webhook:
+    description: 'Your slack webhook URL. Used to send PR reporter notifications.'
+    required: true
+  notify-empty:
+    description: 'Should a message be sent when there are no PRs ready?'
+    default: 'true'
+  exclude-labels:
+    description: 'Comma seperated list of labels to exclude from PR reports'
+  stale-pr:
+    description: 'Should stale PRs be marked'
+    default: 7
 runs:
   using: node20
   main: dist/index.js
+
+
