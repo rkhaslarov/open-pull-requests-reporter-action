@@ -2,10 +2,10 @@ name: 'Open Pull Requests Reporter'
 description: 'Slack messages for your PRs'
 author: 'Rufat Khaslarov'
 inputs:
-  token:
+  repo-token:
     description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
     required: true
-  webhook:
+  slack-webhook:
     description: 'Your slack webhook URL. Used to send PR reporter notifications.'
     required: true
   notify-empty:
