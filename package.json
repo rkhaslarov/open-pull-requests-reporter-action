@@ -1,25 +1,10 @@
 {
-  "name": "Open Pull Requests Reporter",
+  "name": "open-pull-requests-reporter-action",
   "description": "Reports open PR to slack channel via webhook",
   "version": "0.0.0",
   "author": "",
   "private": true,
-  "homepage": "https://github.com/actions/typescript-action",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/actions/typescript-action.git"
-  },
-  "bugs": {
-    "url": "https://github.com/actions/typescript-action/issues"
-  },
-  "keywords": [
-    "actions",
-    "node",
-    "setup"
-  ],
-  "exports": {
-    ".": "./dist/index.js"
-  },
+  "main": "dist/index.js",
   "engines": {
     "node": ">=20"
   },
@@ -28,7 +13,7 @@
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",
-    "package": "ncc build --source-map --license licenses.txt",
+    "package": "ncc build",
     "test": "jest --passWithNoTests",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
