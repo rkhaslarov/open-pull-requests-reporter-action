@@ -41,7 +41,7 @@ export async function run(): Promise<void> {
       text = text.concat(formatSinglePR(pr))
     }
 
-    core.info(`Formatting Slack webhook message for ${repoName}`)
+    core.info(`Formatting Slack webhook message for ${repoName}: ${text}`)
 
     const message = formatSlackMessage(
       repoName,

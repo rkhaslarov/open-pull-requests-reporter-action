@@ -60,7 +60,7 @@ async function run() {
         for (const pr of readyPRS) {
             text = text.concat((0, message_1.formatSinglePR)(pr));
         }
-        core.info(`Formatting Slack webhook message for ${repoName}`);
+        core.info(`Formatting Slack webhook message for ${repoName}: ${text}`);
         const message = (0, message_1.formatSlackMessage)(repoName, text, pullRequests.length, readyPRS.length);
         await axios_1.default.post(slackWebhook, message);
         core.info('Successful Slack webhook response');
