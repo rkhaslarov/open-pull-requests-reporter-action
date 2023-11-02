@@ -41,6 +41,8 @@ export async function run(): Promise<void> {
       text = text.concat(formatSinglePR(pr))
     }
 
+    core.info(`Formatting Slack webhook message for ${repoName}`)
+
     const message = formatSlackMessage(
       repoName,
       text,
@@ -51,6 +53,10 @@ export async function run(): Promise<void> {
     await axios.post(slackWebhook, message)
     core.info('Successful Slack webhook response')
   } catch (error: any) {
+    if (error.response) {
+      core.setFailed(error.response.data)
+    }
+
     core.setFailed(error.message)
   }
 }
