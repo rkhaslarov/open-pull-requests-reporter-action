@@ -50,6 +50,8 @@ export async function run(): Promise<void> {
       readyPRS.length
     )
 
+    core.info(`Sending message to Slack webhook: ${JSON.stringify(message)}`)
+
     await axios.post(slackWebhook, message)
     core.info('Successful Slack webhook response')
   } catch (error: any) {

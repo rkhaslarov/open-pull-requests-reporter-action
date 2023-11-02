@@ -62,6 +62,7 @@ async function run() {
         }
         core.info(`Formatting Slack webhook message for ${repoName}: ${text}`);
         const message = (0, message_1.formatSlackMessage)(repoName, text, pullRequests.length, readyPRS.length);
+        core.info(`Sending message to Slack webhook: ${JSON.stringify(message)}`);
         await axios_1.default.post(slackWebhook, message);
         core.info('Successful Slack webhook response');
     }
