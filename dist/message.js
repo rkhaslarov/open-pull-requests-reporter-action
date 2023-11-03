@@ -23,34 +23,36 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatSlackMessage = exports.formatSinglePR = void 0;
+exports.formatSlackMessage = exports.formatPullRequests = void 0;
 const core = __importStar(require("@actions/core"));
-const github = __importStar(require("./api"));
 const date_fns_1 = require("date-fns");
 const timeago_js_1 = require("timeago.js");
-function getReviewStatus(pr) {
-    if (pr.reviews.totalCount === 0) {
-        return '*No reviews*';
-    }
-    else if (pr.reviews.nodes.some(review => review.state === github.ReviewStates.CHANGES_REQUESTED)) {
-        return '*Changes Requested*';
-    }
-    else {
-        return `*${pr.reviews.totalCount} approvals*`;
-    }
-}
-function formatSinglePR(pr) {
+function formatPullRequest(pr) {
     const stalePrDays = (Number(core.getInput('stale-pr')) ?? 7) * -1;
     const createdAt = new Date(pr.createdAt);
-    const status = getReviewStatus(pr);
     const isStalePR = (0, date_fns_1.differenceInCalendarDays)(createdAt, Date.now()) <= stalePrDays;
     const dateString = isStalePR
         ? `🚨 ${(0, timeago_js_1.format)(pr.createdAt, 'en_US')} 🚨`
         : `${(0, timeago_js_1.format)(pr.createdAt, 'en_US')}`;
-    return `\n👉 <${pr.url}|${pr.title}> | ${status} | ${dateString}`;
+    return `\n👉 <${pr.url}|${pr.title}> | ${dateString}`;
 }
-exports.formatSinglePR = formatSinglePR;
-function formatSlackMessage(repoName, text, totalPRs, readyPRs) {
+function formatPullRequestAuthor(login) {
+    return `\n👉 <https://github.com/${login}|${login}>: `;
+}
+function formatPullRequests(groupedPullRequests) {
+    return Object.keys(groupedPullRequests).map((author) => {
+        const text = formatPullRequestAuthor(author).concat(groupedPullRequests[author].map(formatPullRequest).join(''));
+        return {
+            type: 'section',
+            text: {
+                type: 'mrkdwn',
+                text
+            }
+        };
+    });
+}
+exports.formatPullRequests = formatPullRequests;
+function formatSlackMessage(repoName, blocks, totalPRs, readyPRs) {
     return {
         username: 'PR Reporter',
         icon_emoji: ':rolled_up_newspaper:',
@@ -65,13 +67,7 @@ function formatSlackMessage(repoName, text, totalPRs, readyPRs) {
             {
                 type: 'divider'
             },
-            {
-                type: 'section',
-                text: {
-                    type: 'mrkdwn',
-                    text
-                }
-            },
+            ...blocks,
             {
                 type: 'context',
                 elements: [
@@ -80,6 +76,13 @@ function formatSlackMessage(repoName, text, totalPRs, readyPRs) {
                         text: `You have *${totalPRs}* open PRs and *${readyPRs}* ready for review`
                     }
                 ]
+            },
+            {
+                type: 'section',
+                text: {
+                    type: 'mrkdwn',
+                    text: `*<https://github.com/${repoName}/pulls|Show more>*`
+                }
             },
             {
                 type: 'divider'

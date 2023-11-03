@@ -55,6 +55,9 @@ async function queryPRs(token) {
               headRef {
                 name
               }
+              author {
+                login
+              }
               commits(first: 10) {
                 nodes {
                   commit {

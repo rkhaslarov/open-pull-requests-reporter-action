@@ -1,53 +1,43 @@
 import * as core from '@actions/core'
 import axios from 'axios'
 import * as github from './api'
-import { formatSlackMessage, formatSinglePR } from './message'
+import { formatSlackMessage, formatPullRequests } from './message'
+import { groupPullRequestsByAuthor, isPullRequestReadyForReview } from './utils'
 
 export async function run(): Promise<void> {
   try {
     const token: string = core.getInput('repo-token')
     const slackWebhook: string = core.getInput('slack-webhook')
-    const notifyEmpty: boolean = core.getInput('notify-empty') === 'true'
     const excludeLabels: string[] = core.getInput('exclude-labels')?.split(',')
 
     core.info(`Starting GraphQL request...`)
 
     const response = await github.queryPRs(token)
-
-    core.info(`Successful GraphQL response: ${JSON.stringify(response)}`)
-
     const pullRequests = response?.pullRequests.nodes
     const repoName = response?.nameWithOwner
-    const readyPRS = pullRequests.filter((pr: github.PullRequest) => {
-      const excluded =
-        excludeLabels &&
-        pr.labels.nodes.some(label => excludeLabels.includes(label.name))
-      return !pr.isDraft && !excluded
-    })
+    const readyPullRequests = pullRequests.filter(pr =>
+      isPullRequestReadyForReview(pr, excludeLabels)
+    )
 
-    core.info(`PRs are ready for review: ${JSON.stringify(readyPRS)}`)
-
-    let text = ''
-
-    if (readyPRS.length === 0) {
-      if (notifyEmpty) {
-        text = '👍 No PRs are waiting for review!'
-      } else {
-        return
-      }
+    if (readyPullRequests.length === 0) {
+      return
     }
 
-    for (const pr of readyPRS) {
-      text = text.concat(formatSinglePR(pr))
-    }
+    core.info(`PRs are ready for review: ${JSON.stringify(readyPullRequests)}`)
 
-    core.info(`Formatting Slack webhook message for ${repoName}: ${text}`)
+    const groupedPullRequests = groupPullRequestsByAuthor(readyPullRequests)
+
+    core.info(`Grouped PRs by Author: ${JSON.stringify(groupedPullRequests)}`)
+
+    const blocks = formatPullRequests(groupedPullRequests)
+
+    core.info(`Formatting Slack webhook message for ${repoName}: ${blocks}`)
 
     const message = formatSlackMessage(
       repoName,
-      text,
+      blocks,
       pullRequests.length,
-      readyPRS.length
+      readyPullRequests.length
     )
 
     core.info(`Sending message to Slack webhook: ${JSON.stringify(message)}`)
