@@ -140,7 +140,7 @@ function formatPullRequest(pr) {
     const createdAt = new Date(pr.createdAt);
     const isStalePR = (0, date_fns_1.differenceInCalendarDays)(createdAt, Date.now()) <= stalePrDays;
     const dateString = isStalePR
-        ? `🚨 ${(0, timeago_js_1.format)(pr.createdAt, 'en_US')} 🚨`
+        ? `${(0, timeago_js_1.format)(pr.createdAt, 'en_US')} ⚠️`
         : `${(0, timeago_js_1.format)(pr.createdAt, 'en_US')}`;
     return `\n📌 <${pr.url}|${pr.title}> | ${dateString}`;
 }

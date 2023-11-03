@@ -16,7 +16,7 @@ function formatPullRequest(pr: github.PullRequest): string {
     differenceInCalendarDays(createdAt, Date.now()) <= stalePrDays
 
   const dateString = isStalePR
-    ? `🚨 ${format(pr.createdAt, 'en_US')} 🚨`
+    ? `${format(pr.createdAt, 'en_US')} ⚠️`
     : `${format(pr.createdAt, 'en_US')}`
 
   return `\n📌 <${pr.url}|${pr.title}> | ${dateString}`
