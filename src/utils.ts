@@ -47,7 +47,7 @@ export function groupPullRequestsByAuthor(
       if (acc[cur.author.login]) {
         acc[cur.author.login].push(cur)
       } else {
-        acc[cur.author.login] = []
+        acc[cur.author.login] = [cur]
       }
 
       return acc

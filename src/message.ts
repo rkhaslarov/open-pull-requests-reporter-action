@@ -19,11 +19,11 @@ function formatPullRequest(pr: github.PullRequest): string {
     ? `🚨 ${format(pr.createdAt, 'en_US')} 🚨`
     : `${format(pr.createdAt, 'en_US')}`
 
-  return `\n👉 <${pr.url}|${pr.title}> | ${dateString}`
+  return `\n📌 <${pr.url}|${pr.title}> | ${dateString}`
 }
 
 function formatPullRequestAuthor(login: string): string {
-  return `\n👉 <https://github.com/${login}|${login}>: `
+  return `\n👤 <https://github.com/${login}|${login}>: `
 }
 
 export function formatPullRequests(
@@ -66,6 +66,9 @@ export function formatSlackMessage(
       },
       ...blocks,
       {
+        type: 'divider'
+      },
+      {
         type: 'context',
         elements: [
           {
@@ -78,7 +81,7 @@ export function formatSlackMessage(
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `*<https://github.com/${repoName}/pulls|Show more>*`
+          text: `*<https://github.com/${repoName}/pulls|Explore on GitHub>*`
         }
       },
       {
