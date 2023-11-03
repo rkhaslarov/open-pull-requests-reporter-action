@@ -33,6 +33,9 @@ export interface PullRequest {
   comments: {
     totalCount: number
   }
+  author: {
+    login: string
+  }
   headRef: {
     name: string
   }
@@ -80,6 +83,9 @@ export async function queryPRs(
               }
               headRef {
                 name
+              }
+              author {
+                login
               }
               commits(first: 10) {
                 nodes {

@@ -2,30 +2,16 @@ import * as core from '@actions/core'
 import * as github from './api'
 import { differenceInCalendarDays } from 'date-fns'
 import { format } from 'timeago.js'
+
 export interface BlockMessage {
   username: string
   icon_emoji: string
   blocks: object[]
 }
 
-function getReviewStatus(pr: github.PullRequest): string {
-  if (pr.reviews.totalCount === 0) {
-    return '*No reviews*'
-  } else if (
-    pr.reviews.nodes.some(
-      review => review.state === github.ReviewStates.CHANGES_REQUESTED
-    )
-  ) {
-    return '*Changes Requested*'
-  } else {
-    return `*${pr.reviews.totalCount} approvals*`
-  }
-}
-
-export function formatSinglePR(pr: github.PullRequest): string {
+function formatPullRequest(pr: github.PullRequest): string {
   const stalePrDays = (Number(core.getInput('stale-pr')) ?? 7) * -1
   const createdAt = new Date(pr.createdAt)
-  const status = getReviewStatus(pr)
   const isStalePR =
     differenceInCalendarDays(createdAt, Date.now()) <= stalePrDays
 
@@ -33,12 +19,34 @@ export function formatSinglePR(pr: github.PullRequest): string {
     ? `🚨 ${format(pr.createdAt, 'en_US')} 🚨`
     : `${format(pr.createdAt, 'en_US')}`
 
-  return `\n👉 <${pr.url}|${pr.title}> | ${status} | ${dateString}`
+  return `\n👉 <${pr.url}|${pr.title}> | ${dateString}`
+}
+
+function formatPullRequestAuthor(login: string): string {
+  return `\n👉 <https://github.com/${login}|${login}>: `
+}
+
+export function formatPullRequests(
+  groupedPullRequests: Record<string, github.PullRequest[]>
+): object[] {
+  return Object.keys(groupedPullRequests).map((author: string) => {
+    const text = formatPullRequestAuthor(author).concat(
+      groupedPullRequests[author].map(formatPullRequest).join('')
+    )
+
+    return {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text
+      }
+    }
+  })
 }
 
 export function formatSlackMessage(
   repoName: string,
-  text: string,
+  blocks: object[],
   totalPRs: number,
   readyPRs: number
 ): BlockMessage {
@@ -56,13 +64,7 @@ export function formatSlackMessage(
       {
         type: 'divider'
       },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text
-        }
-      },
+      ...blocks,
       {
         type: 'context',
         elements: [
@@ -71,6 +73,13 @@ export function formatSlackMessage(
             text: `You have *${totalPRs}* open PRs and *${readyPRs}* ready for review`
           }
         ]
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*<https://github.com/${repoName}/pulls|Show more>*`
+        }
       },
       {
         type: 'divider'

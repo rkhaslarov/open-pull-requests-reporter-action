@@ -62,6 +62,9 @@ async function queryPRs(token) {
               headRef {
                 name
               }
+              author {
+                login
+              }
               commits(first: 10) {
                 nodes {
                   commit {
@@ -128,34 +131,36 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.formatSlackMessage = exports.formatSinglePR = void 0;
+exports.formatSlackMessage = exports.formatPullRequests = void 0;
 const core = __importStar(__nccwpck_require__(42186));
-const github = __importStar(__nccwpck_require__(82491));
 const date_fns_1 = __nccwpck_require__(73314);
 const timeago_js_1 = __nccwpck_require__(97259);
-function getReviewStatus(pr) {
-    if (pr.reviews.totalCount === 0) {
-        return '*No reviews*';
-    }
-    else if (pr.reviews.nodes.some(review => review.state === github.ReviewStates.CHANGES_REQUESTED)) {
-        return '*Changes Requested*';
-    }
-    else {
-        return `*${pr.reviews.totalCount} approvals*`;
-    }
-}
-function formatSinglePR(pr) {
+function formatPullRequest(pr) {
     const stalePrDays = (Number(core.getInput('stale-pr')) ?? 7) * -1;
     const createdAt = new Date(pr.createdAt);
-    const status = getReviewStatus(pr);
     const isStalePR = (0, date_fns_1.differenceInCalendarDays)(createdAt, Date.now()) <= stalePrDays;
     const dateString = isStalePR
         ? `🚨 ${(0, timeago_js_1.format)(pr.createdAt, 'en_US')} 🚨`
         : `${(0, timeago_js_1.format)(pr.createdAt, 'en_US')}`;
-    return `\n👉 <${pr.url}|${pr.title}> | ${status} | ${dateString}`;
+    return `\n👉 <${pr.url}|${pr.title}> | ${dateString}`;
 }
-exports.formatSinglePR = formatSinglePR;
-function formatSlackMessage(repoName, text, totalPRs, readyPRs) {
+function formatPullRequestAuthor(login) {
+    return `\n👉 <https://github.com/${login}|${login}>: `;
+}
+function formatPullRequests(groupedPullRequests) {
+    return Object.keys(groupedPullRequests).map((author) => {
+        const text = formatPullRequestAuthor(author).concat(groupedPullRequests[author].map(formatPullRequest).join(''));
+        return {
+            type: 'section',
+            text: {
+                type: 'mrkdwn',
+                text
+            }
+        };
+    });
+}
+exports.formatPullRequests = formatPullRequests;
+function formatSlackMessage(repoName, blocks, totalPRs, readyPRs) {
     return {
         username: 'PR Reporter',
         icon_emoji: ':rolled_up_newspaper:',
@@ -170,13 +175,7 @@ function formatSlackMessage(repoName, text, totalPRs, readyPRs) {
             {
                 type: 'divider'
             },
-            {
-                type: 'section',
-                text: {
-                    type: 'mrkdwn',
-                    text
-                }
-            },
+            ...blocks,
             {
                 type: 'context',
                 elements: [
@@ -185,6 +184,13 @@ function formatSlackMessage(repoName, text, totalPRs, readyPRs) {
                         text: `You have *${totalPRs}* open PRs and *${readyPRs}* ready for review`
                     }
                 ]
+            },
+            {
+                type: 'section',
+                text: {
+                    type: 'mrkdwn',
+                    text: `*<https://github.com/${repoName}/pulls|Show more>*`
+                }
             },
             {
                 type: 'divider'
@@ -234,37 +240,26 @@ const core = __importStar(__nccwpck_require__(42186));
 const axios_1 = __importDefault(__nccwpck_require__(96545));
 const github = __importStar(__nccwpck_require__(82491));
 const message_1 = __nccwpck_require__(12993);
+const utils_1 = __nccwpck_require__(14729);
 async function run() {
     try {
         const token = core.getInput('repo-token');
         const slackWebhook = core.getInput('slack-webhook');
-        const notifyEmpty = core.getInput('notify-empty') === 'true';
         const excludeLabels = core.getInput('exclude-labels')?.split(',');
         core.info(`Starting GraphQL request...`);
         const response = await github.queryPRs(token);
-        core.info(`Successful GraphQL response: ${JSON.stringify(response)}`);
         const pullRequests = response?.pullRequests.nodes;
         const repoName = response?.nameWithOwner;
-        const readyPRS = pullRequests.filter((pr) => {
-            const excluded = excludeLabels &&
-                pr.labels.nodes.some(label => excludeLabels.includes(label.name));
-            return !pr.isDraft && !excluded;
-        });
-        core.info(`PRs are ready for review: ${JSON.stringify(readyPRS)}`);
-        let text = '';
-        if (readyPRS.length === 0) {
-            if (notifyEmpty) {
-                text = '👍 No PRs are waiting for review!';
-            }
-            else {
-                return;
-            }
+        const readyPullRequests = pullRequests.filter(pr => (0, utils_1.isPullRequestReadyForReview)(pr, excludeLabels));
+        if (readyPullRequests.length === 0) {
+            return;
         }
-        for (const pr of readyPRS) {
-            text = text.concat((0, message_1.formatSinglePR)(pr));
-        }
-        core.info(`Formatting Slack webhook message for ${repoName}: ${text}`);
-        const message = (0, message_1.formatSlackMessage)(repoName, text, pullRequests.length, readyPRS.length);
+        core.info(`PRs are ready for review: ${JSON.stringify(readyPullRequests)}`);
+        const groupedPullRequests = (0, utils_1.groupPullRequestsByAuthor)(readyPullRequests);
+        core.info(`Grouped PRs by Author: ${JSON.stringify(groupedPullRequests)}`);
+        const blocks = (0, message_1.formatPullRequests)(groupedPullRequests);
+        core.info(`Formatting Slack webhook message for ${repoName}: ${blocks}`);
+        const message = (0, message_1.formatSlackMessage)(repoName, blocks, pullRequests.length, readyPullRequests.length);
         core.info(`Sending message to Slack webhook: ${JSON.stringify(message)}`);
         await axios_1.default.post(slackWebhook, message);
         core.info('Successful Slack webhook response');
@@ -277,6 +272,78 @@ async function run() {
     }
 }
 exports.run = run;
+
+
+/***/ }),
+
+/***/ 14729:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.groupPullRequestsByAuthor = exports.isPullRequestReadyForReview = exports.getPullRequestStatus = exports.PRStatuses = void 0;
+const github = __importStar(__nccwpck_require__(82491));
+exports.PRStatuses = {
+    REVIEWED: 'REVIEWED',
+    CHANGES_REQUIRED: 'CHANGES_REQUIRED',
+    REVIEW_REQUIRED: 'REVIEW_REQUIRED',
+    DRAFT: 'DRAFT'
+};
+function getPullRequestStatus(pr) {
+    if (pr.isDraft) {
+        return exports.PRStatuses.DRAFT;
+    }
+    if (pr.reviews.totalCount >= 2) {
+        return exports.PRStatuses.REVIEWED;
+    }
+    if (pr.reviews.nodes.some(review => review.state === github.ReviewStates.CHANGES_REQUESTED)) {
+        return exports.PRStatuses.CHANGES_REQUIRED;
+    }
+    return exports.PRStatuses.REVIEW_REQUIRED;
+}
+exports.getPullRequestStatus = getPullRequestStatus;
+function isPullRequestReadyForReview(pr, excludeLabels) {
+    const status = getPullRequestStatus(pr);
+    const excludedByLabels = pr.labels.nodes.some(label => excludeLabels.includes(label.name));
+    return status === exports.PRStatuses.REVIEW_REQUIRED && !excludedByLabels;
+}
+exports.isPullRequestReadyForReview = isPullRequestReadyForReview;
+function groupPullRequestsByAuthor(prs) {
+    return prs.reduce((acc, cur) => {
+        if (acc[cur.author.login]) {
+            acc[cur.author.login].push(cur);
+        }
+        else {
+            acc[cur.author.login] = [];
+        }
+        return acc;
+    }, {});
+}
+exports.groupPullRequestsByAuthor = groupPullRequestsByAuthor;
 
 
 /***/ }),
