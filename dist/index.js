@@ -142,10 +142,10 @@ function formatPullRequest(pr) {
     const dateString = isStalePR
         ? `🚨 ${(0, timeago_js_1.format)(pr.createdAt, 'en_US')} 🚨`
         : `${(0, timeago_js_1.format)(pr.createdAt, 'en_US')}`;
-    return `\n👉 <${pr.url}|${pr.title}> | ${dateString}`;
+    return `\n📌 <${pr.url}|${pr.title}> | ${dateString}`;
 }
 function formatPullRequestAuthor(login) {
-    return `\n👉 <https://github.com/${login}|${login}>: `;
+    return `\n👤 <https://github.com/${login}|${login}>: `;
 }
 function formatPullRequests(groupedPullRequests) {
     return Object.keys(groupedPullRequests).map((author) => {
@@ -177,6 +177,9 @@ function formatSlackMessage(repoName, blocks, totalPRs, readyPRs) {
             },
             ...blocks,
             {
+                type: 'divider'
+            },
+            {
                 type: 'context',
                 elements: [
                     {
@@ -189,7 +192,7 @@ function formatSlackMessage(repoName, blocks, totalPRs, readyPRs) {
                 type: 'section',
                 text: {
                     type: 'mrkdwn',
-                    text: `*<https://github.com/${repoName}/pulls|Show more>*`
+                    text: `*<https://github.com/${repoName}/pulls|Explore on GitHub>*`
                 }
             },
             {
@@ -338,7 +341,7 @@ function groupPullRequestsByAuthor(prs) {
             acc[cur.author.login].push(cur);
         }
         else {
-            acc[cur.author.login] = [];
+            acc[cur.author.login] = [cur];
         }
         return acc;
     }, {});
