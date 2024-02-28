@@ -18,7 +18,7 @@ Installation is pretty simple, create separate workflow based on cron job:
    jobs:
      send-slack-notification:
        name: Open Pull Requests Report
-       runs-on: ubuntu-orca-c4r8
+       runs-on: ubuntu-latest
        steps:
          - name: 'Notify in Slack'
            uses: rkhaslarov/open-pull-requests-reporter-action@v1.0.1
