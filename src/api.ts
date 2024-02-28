@@ -87,9 +87,11 @@ export async function queryPRs(
               author {
                 login
               }
-              commits(first: 10) {
+              commits(last: 1) {
                 nodes {
                   commit {
+                    authoredDate
+                    committedDate
                     status {
                       id
                       state
