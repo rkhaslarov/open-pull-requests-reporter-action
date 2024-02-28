@@ -42,6 +42,7 @@ async function queryPRs(token) {
               title
               url
               createdAt
+              updatedAt
               isDraft
               reviews(first: 10, states: [CHANGES_REQUESTED, APPROVED]) {
                 totalCount

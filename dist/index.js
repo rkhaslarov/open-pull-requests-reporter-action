@@ -49,6 +49,7 @@ async function queryPRs(token) {
               title
               url
               createdAt
+              updatedAt
               isDraft
               reviews(first: 10, states: [CHANGES_REQUESTED, APPROVED]) {
                 totalCount
@@ -137,11 +138,11 @@ const date_fns_1 = __nccwpck_require__(73314);
 const timeago_js_1 = __nccwpck_require__(97259);
 function formatPullRequest(pr) {
     const stalePrDays = (Number(core.getInput('stale-pr')) ?? 7) * -1;
-    const createdAt = new Date(pr.createdAt);
-    const isStalePR = (0, date_fns_1.differenceInCalendarDays)(createdAt, Date.now()) <= stalePrDays;
+    const updatedAt = new Date(pr.updatedAt);
+    const isStalePR = (0, date_fns_1.differenceInCalendarDays)(updatedAt, Date.now()) <= stalePrDays;
     const dateString = isStalePR
-        ? `${(0, timeago_js_1.format)(pr.createdAt, 'en_US')} ⚠️`
-        : `${(0, timeago_js_1.format)(pr.createdAt, 'en_US')}`;
+        ? `${(0, timeago_js_1.format)(pr.updatedAt, 'en_US')} ⚠️`
+        : `${(0, timeago_js_1.format)(pr.updatedAt, 'en_US')}`;
     return `\n📌 <${pr.url}|${pr.title}> | ${dateString}`;
 }
 function formatPullRequestAuthor(login) {

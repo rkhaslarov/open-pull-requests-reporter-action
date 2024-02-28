@@ -19,6 +19,7 @@ export interface PullRequest {
   title: string
   url: string
   createdAt: string
+  updatedAt: string
   isDraft: boolean
   reviews: {
     totalCount: number
@@ -71,6 +72,7 @@ export async function queryPRs(
               title
               url
               createdAt
+              updatedAt
               isDraft
               reviews(first: 10, states: [CHANGES_REQUESTED, APPROVED]) {
                 totalCount
