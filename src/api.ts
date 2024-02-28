@@ -41,7 +41,11 @@ export interface PullRequest {
     name: string
   }
   commits: {
-    nodes: object[]
+    nodes: {
+      commit: {
+        committedDate: string
+      }
+    }[]
   }
   labels: {
     nodes:

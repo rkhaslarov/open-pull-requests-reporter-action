@@ -140,11 +140,12 @@ const date_fns_1 = __nccwpck_require__(73314);
 const timeago_js_1 = __nccwpck_require__(97259);
 function formatPullRequest(pr) {
     const stalePrDays = (Number(core.getInput('stale-pr')) ?? 7) * -1;
-    const updatedAt = new Date(pr.updatedAt);
-    const isStalePR = (0, date_fns_1.differenceInCalendarDays)(updatedAt, Date.now()) <= stalePrDays;
+    const lastCommitDateString = pr.commits.nodes[0].commit.committedDate;
+    const lastCommitDate = new Date(lastCommitDateString);
+    const isStalePR = (0, date_fns_1.differenceInCalendarDays)(lastCommitDate, Date.now()) <= stalePrDays;
     const dateString = isStalePR
-        ? `${(0, timeago_js_1.format)(pr.updatedAt, 'en_US')} ⚠️`
-        : `${(0, timeago_js_1.format)(pr.updatedAt, 'en_US')}`;
+        ? `${(0, timeago_js_1.format)(lastCommitDateString, 'en_US')} ⚠️`
+        : `${(0, timeago_js_1.format)(lastCommitDateString, 'en_US')}`;
     return `\n📌 <${pr.url}|${pr.title}> | ${dateString}`;
 }
 function formatPullRequestAuthor(login) {
