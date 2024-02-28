@@ -11,13 +11,14 @@ export interface BlockMessage {
 
 function formatPullRequest(pr: github.PullRequest): string {
   const stalePrDays = (Number(core.getInput('stale-pr')) ?? 7) * -1
-  const updatedAt = new Date(pr.updatedAt)
+  const lastCommitDateString = pr.commits.nodes[0].commit.committedDate
+  const lastCommitDate = new Date(lastCommitDateString)
   const isStalePR =
-    differenceInCalendarDays(updatedAt, Date.now()) <= stalePrDays
+    differenceInCalendarDays(lastCommitDate, Date.now()) <= stalePrDays
 
   const dateString = isStalePR
-    ? `${format(pr.updatedAt, 'en_US')} ⚠️`
-    : `${format(pr.updatedAt, 'en_US')}`
+    ? `${format(lastCommitDateString, 'en_US')} ⚠️`
+    : `${format(lastCommitDateString, 'en_US')}`
 
   return `\n📌 <${pr.url}|${pr.title}> | ${dateString}`
 }
