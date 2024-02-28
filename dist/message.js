@@ -29,11 +29,11 @@ const date_fns_1 = require("date-fns");
 const timeago_js_1 = require("timeago.js");
 function formatPullRequest(pr) {
     const stalePrDays = (Number(core.getInput('stale-pr')) ?? 7) * -1;
-    const createdAt = new Date(pr.createdAt);
-    const isStalePR = (0, date_fns_1.differenceInCalendarDays)(createdAt, Date.now()) <= stalePrDays;
+    const updatedAt = new Date(pr.updatedAt);
+    const isStalePR = (0, date_fns_1.differenceInCalendarDays)(updatedAt, Date.now()) <= stalePrDays;
     const dateString = isStalePR
-        ? `${(0, timeago_js_1.format)(pr.createdAt, 'en_US')} ⚠️`
-        : `${(0, timeago_js_1.format)(pr.createdAt, 'en_US')}`;
+        ? `${(0, timeago_js_1.format)(pr.updatedAt, 'en_US')} ⚠️`
+        : `${(0, timeago_js_1.format)(pr.updatedAt, 'en_US')}`;
     return `\n📌 <${pr.url}|${pr.title}> | ${dateString}`;
 }
 function formatPullRequestAuthor(login) {
